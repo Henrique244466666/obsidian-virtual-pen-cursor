@@ -2,11 +2,12 @@
 
 /* ---- Virtual cursor element (Dot default; override freely in a CSS snippet) ---- */
 .virtual-pen-cursor {
+  --vpc-eff-scale: calc(var(--vpc-scale, 1) * var(--vpc-pressure-scale, 1));
   position: fixed;
   top: 0;
   left: 0;
-  width: calc(12px * var(--vpc-scale, 1));
-  height: calc(12px * var(--vpc-scale, 1));
+  width: calc(12px * var(--vpc-eff-scale));
+  height: calc(12px * var(--vpc-eff-scale));
   border-radius: 50%;
   border: 2px solid var(--vpc-dot-border, var(--interactive-accent, #7c3aed));
   background-color: var(--vpc-dot-fill, rgba(255, 255, 255, 0.4));
@@ -15,7 +16,7 @@
   z-index: 9999999;
   opacity: 0;
   transform: translate(-50%, -50%);
-  will-change: transform, left, top, opacity;
+  will-change: transform, left, top, width, height, opacity;
   transition: opacity 0.15s ease, transform 0.08s ease;
 }
 
@@ -23,7 +24,7 @@
   opacity: 1;
 }
 
-.virtual-pen-cursor.is-pressed {
+.virtual-pen-cursor.is-pressed:not(.is-pressure-active) {
   transform: translate(-50%, -50%) scale(0.8);
 }
 
@@ -37,8 +38,8 @@
 /* ---- 1. Virtual Windows arrow ----
    Hotspot = arrow tip = top-left corner of the element, so no centering translate. */
 .virtual-pen-cursor.vpc-shape-arrow {
-  width: calc(13px * var(--vpc-scale, 1));
-  height: calc(20px * var(--vpc-scale, 1));
+  width: calc(13px * var(--vpc-eff-scale));
+  height: calc(20px * var(--vpc-eff-scale));
   border: none;
   border-radius: 0;
   background: none;
@@ -48,15 +49,15 @@
   transform-origin: 0 0;
 }
 
-.virtual-pen-cursor.vpc-shape-arrow.is-pressed {
+.virtual-pen-cursor.vpc-shape-arrow.is-pressed:not(.is-pressure-active) {
   transform: scale(0.88);
 }
 
 /* ---- 2. Virtual Paintbrush ----
    Hotspot = bristle tip at bottom-left (approx 4%, 96%) */
 .virtual-pen-cursor.vpc-shape-brush {
-  width: calc(22px * var(--vpc-scale, 1));
-  height: calc(22px * var(--vpc-scale, 1));
+  width: calc(22px * var(--vpc-eff-scale));
+  height: calc(22px * var(--vpc-eff-scale));
   border: none;
   border-radius: 0;
   background: none;
@@ -70,11 +71,15 @@
   transform: translate(-4%, -96%) rotate(-10deg) scale(0.9);
 }
 
+.virtual-pen-cursor.vpc-shape-brush.is-pressed.is-pressure-active {
+  transform: translate(-4%, -96%) rotate(-10deg);
+}
+
 /* ---- 3. Virtual Precision Reticle (CAD / Technical Crosshair) ----
    Hotspot = exact center (50%, 50%) */
 .virtual-pen-cursor.vpc-shape-crosshair {
-  width: calc(24px * var(--vpc-scale, 1));
-  height: calc(24px * var(--vpc-scale, 1));
+  width: calc(24px * var(--vpc-eff-scale));
+  height: calc(24px * var(--vpc-eff-scale));
   border: none;
   border-radius: 0;
   background: none;
@@ -88,11 +93,15 @@
   transform: translate(-50%, -50%) rotate(45deg) scale(0.85);
 }
 
+.virtual-pen-cursor.vpc-shape-crosshair.is-pressed.is-pressure-active {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
 /* ---- 4. Virtual Fountain Pen Nib (Calligraphy / Ink) ----
    Hotspot = nib tip at bottom-left (approx 8%, 92%) */
 .virtual-pen-cursor.vpc-shape-nib {
-  width: calc(22px * var(--vpc-scale, 1));
-  height: calc(22px * var(--vpc-scale, 1));
+  width: calc(22px * var(--vpc-eff-scale));
+  height: calc(22px * var(--vpc-eff-scale));
   border: none;
   border-radius: 0;
   background: none;
@@ -106,11 +115,15 @@
   transform: translate(-8%, -92%) rotate(-6deg) scale(0.9);
 }
 
+.virtual-pen-cursor.vpc-shape-nib.is-pressed.is-pressure-active {
+  transform: translate(-8%, -92%) rotate(-6deg);
+}
+
 /* ---- 5. Virtual Sleek Pointer (macOS / Modern Rounded Arrow) ----
    Hotspot = top-left tip (approx 7%, 6%) */
 .virtual-pen-cursor.vpc-shape-mac {
-  width: calc(16px * var(--vpc-scale, 1));
-  height: calc(22px * var(--vpc-scale, 1));
+  width: calc(16px * var(--vpc-eff-scale));
+  height: calc(22px * var(--vpc-eff-scale));
   border: none;
   border-radius: 0;
   background: none;
@@ -120,34 +133,34 @@
   transform-origin: 7% 6%;
 }
 
-.virtual-pen-cursor.vpc-shape-mac.is-pressed {
+.virtual-pen-cursor.vpc-shape-mac.is-pressed:not(.is-pressure-active) {
   transform: translate(-7%, -6%) scale(0.88);
 }
 
 /* ---- 6. Virtual Laser Pointer (Neon Presentation Dot) ----
    Hotspot = center (50%, 50%) */
 .virtual-pen-cursor.vpc-shape-laser {
-  width: calc(10px * var(--vpc-scale, 1));
-  height: calc(10px * var(--vpc-scale, 1));
+  width: calc(10px * var(--vpc-eff-scale));
+  height: calc(10px * var(--vpc-eff-scale));
   border-radius: 50%;
   border: 2px solid var(--vpc-laser-glow, #ef4444);
   background-color: var(--vpc-laser-core, #ffffff);
   box-shadow:
-    0 0 calc(6px * var(--vpc-scale, 1)) var(--vpc-laser-glow, #ef4444),
-    0 0 calc(12px * var(--vpc-scale, 1)) var(--vpc-laser-glow, #ef4444),
-    0 0 calc(20px * var(--vpc-scale, 1)) var(--vpc-laser-glow, #ef4444);
+    0 0 calc(6px * var(--vpc-eff-scale)) var(--vpc-laser-glow, #ef4444),
+    0 0 calc(12px * var(--vpc-eff-scale)) var(--vpc-laser-glow, #ef4444),
+    0 0 calc(20px * var(--vpc-eff-scale)) var(--vpc-laser-glow, #ef4444);
   transform: translate(-50%, -50%);
 }
 
-.virtual-pen-cursor.vpc-shape-laser.is-pressed {
+.virtual-pen-cursor.vpc-shape-laser.is-pressed:not(.is-pressure-active) {
   transform: translate(-50%, -50%) scale(1.25);
 }
 
 /* ---- 7. Virtual Sparkle Wand (Creative / Magic Star) ----
    Hotspot = star center at top-left (approx 19%, 19%) */
 .virtual-pen-cursor.vpc-shape-wand {
-  width: calc(23px * var(--vpc-scale, 1));
-  height: calc(23px * var(--vpc-scale, 1));
+  width: calc(23px * var(--vpc-eff-scale));
+  height: calc(23px * var(--vpc-eff-scale));
   border: none;
   border-radius: 0;
   background: none;
@@ -159,6 +172,10 @@
 
 .virtual-pen-cursor.vpc-shape-wand.is-pressed {
   transform: translate(-19%, -19%) rotate(-14deg) scale(0.9);
+}
+
+.virtual-pen-cursor.vpc-shape-wand.is-pressed.is-pressure-active {
+  transform: translate(-19%, -19%) rotate(-14deg);
 }
 
 /* ===================== Click Animations ===================== */
@@ -418,6 +435,56 @@ button.vpc-preset-card.is-active {
 .vpc-preview-caption {
   font-size: var(--font-ui-smaller);
   color: var(--text-muted);
+}
+
+/* ---- Live Stylus Pressure Tester ---- */
+.vpc-pressure-tester {
+  background-color: var(--background-secondary);
+  border: 1px dashed var(--background-modifier-border-hover, var(--background-modifier-border));
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 8px;
+  margin-bottom: 18px;
+  user-select: none;
+  touch-action: none;
+}
+
+.vpc-pressure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.vpc-pressure-label {
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+}
+
+.vpc-pressure-readout {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-normal);
+}
+
+.vpc-pressure-track {
+  width: 100%;
+  height: 10px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.vpc-pressure-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--interactive-accent), var(--text-accent, var(--interactive-accent)));
+  border-radius: 999px;
+  transition: width 0.04s linear;
 }
 
 /* ---- Native cursor override (replaces the excalidraw_custom_crosshair snippet) ----

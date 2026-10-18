@@ -120,6 +120,12 @@ const DEFAULT_CLICK_ANIM = {
   devices: 'both', // 'pen' | 'mouse' | 'both'
 };
 
+const DEFAULT_PRESSURE = {
+  enabled: false,
+  minScale: 0.75, // Multiplier at lightest touch (pressure -> 0+)
+  maxScale: 1.85, // Multiplier at maximum stylus pressure (pressure = 1.0)
+};
+
 const DEFAULT_SETTINGS = {
   rules: {
     mouse: { excalidraw: 'virtual-dot', elsewhere: 'unchanged' },
@@ -129,6 +135,7 @@ const DEFAULT_SETTINGS = {
   cursorScale: 1, // size multiplier for the virtual cursors
   colors: Object.assign({}, DEFAULT_COLORS),
   clickAnim: Object.assign({}, DEFAULT_CLICK_ANIM),
+  pressure: Object.assign({}, DEFAULT_PRESSURE),
 };
 
 const PRESETS = [
@@ -382,6 +389,10 @@ module.exports = class VirtualPenCursorPlugin extends Plugin {
     s.colors = Object.assign({}, DEFAULT_COLORS, data.colors || {});
     s.clickAnim = Object.assign({}, DEFAULT_CLICK_ANIM, data.clickAnim || {});
     if (!(s.clickAnim.effect in CLICK_EFFECTS)) s.clickAnim.effect = DEFAULT_CLICK_ANIM.effect;
+    s.pressure = Object.assign({}, DEFAULT_PRESSURE, data.pressure || {});
+    s.pressure.enabled = !!s.pressure.enabled;
+    s.pressure.minScale = Number.isFinite(Number(s.pressure.minScale)) ? Number(s.pressure.minScale) : DEFAULT_PRESSURE.minScale;
+    s.pressure.maxScale = Number.isFinite(Number(s.pressure.maxScale)) ? Number(s.pressure.maxScale) : DEFAULT_PRESSURE.maxScale;
     delete s.enabled; // legacy: Obsidian's own plugin toggle replaces it
     s.fadeDelay = Number.isFinite(Number(s.fadeDelay)) ? Number(s.fadeDelay) : DEFAULT_SETTINGS.fadeDelay;
     s.cursorScale = Number(s.cursorScale) || 1;
@@ -404,7 +415,7 @@ module.exports = class VirtualPenCursorPlugin extends Plugin {
     el.className = 'virtual-pen-cursor';
     doc.body.appendChild(el);
 
-    const state = { win, doc, el, rafId: null, hideTimer: null, x: 0, y: 0, inputType: 'mouse', lastPenTime: -Infinity, currentRule: 'virtual-dot' };
+    const state = { win, doc, el, rafId: null, hideTimer: null, x: 0, y: 0, pScale: 1, inputType: 'mouse', lastPenTime: -Infinity, currentRule: 'virtual-dot' };
     this.windows.set(win, state);
 
     const opts = { passive: true, capture: true };
@@ -474,6 +485,16 @@ module.exports = class VirtualPenCursorPlugin extends Plugin {
 
   // ---------------------------------------------------------------- pointer logic
 
+  /** Compute the pressure multiplier (1 when disabled, hovering, or non-pen). */
+  computePressureScale(e, phase) {
+    const pr = this.settings.pressure || DEFAULT_PRESSURE;
+    if (!pr.enabled || e.pointerType !== 'pen' || phase === 'up') return 1;
+    const raw = Number(e.pressure);
+    if (!Number.isFinite(raw) || raw <= 0) return 1;
+    const p = Math.max(0, Math.min(1, raw));
+    return Number((pr.minScale + p * (pr.maxScale - pr.minScale)).toFixed(3));
+  }
+
   handlePointer(state, e, phase) {
     const device = e.pointerType === 'pen' || e.pointerType === 'touch' ? 'pen'
       : e.pointerType === 'mouse' ? 'mouse' : null;
@@ -487,6 +508,11 @@ module.exports = class VirtualPenCursorPlugin extends Plugin {
     if (device !== state.inputType) {
       state.inputType = device;
       this.applyBodyState(state);
+    }
+
+    // Feed live stylus pressure to the Settings tab meter if open
+    if (e.pointerType === 'pen' && this.settingTab && typeof this.settingTab.onLivePenPressure === 'function') {
+      this.settingTab.onLivePenPressure(phase === 'up' ? 0 : (Number(e.pressure) || 0));
     }
 
     const target = e.target;
@@ -509,6 +535,10 @@ module.exports = class VirtualPenCursorPlugin extends Plugin {
     styleCursorElement(state.el, rule, this.settings);
     state.x = e.clientX;
     state.y = e.clientY;
+    state.pScale = this.computePressureScale(e, phase);
+
+    const pressureActive = !!(this.settings.pressure && this.settings.pressure.enabled && e.pointerType === 'pen');
+    state.el.classList.toggle('is-pressure-active', pressureActive);
 
     // Visual feedback on contact: shrink/tilt cursor + spawn click animation
     if (phase === 'down') {
@@ -527,6 +557,7 @@ module.exports = class VirtualPenCursorPlugin extends Plugin {
       state.rafId = null;
       state.el.style.left = `${state.x}px`;
       state.el.style.top = `${state.y}px`;
+      state.el.style.setProperty('--vpc-pressure-scale', String(state.pScale));
       state.el.classList.add('is-visible');
     });
 
@@ -544,7 +575,9 @@ module.exports = class VirtualPenCursorPlugin extends Plugin {
       state.rafId = null;
     }
     clearTimeout(state.hideTimer);
-    state.el.classList.remove('is-visible', 'is-pressed');
+    state.pScale = 1;
+    state.el.style.setProperty('--vpc-pressure-scale', '1');
+    state.el.classList.remove('is-visible', 'is-pressed', 'is-pressure-active');
   }
 };
 
@@ -568,11 +601,33 @@ class VirtualPenCursorSettingTab extends PluginSettingTab {
     this.plugin.settingTab = this;
     this.previewEls = {};
     this.previewStages = {};
+    this.pressureFillEl = null;
+    this.pressureTextEl = null;
   }
 
   updatePreviews() {
     for (const [rule, el] of Object.entries(this.previewEls)) {
       if (el) styleCursorElement(el, rule, this.plugin.settings);
+    }
+  }
+
+  onLivePenPressure(pressure) {
+    const p = Math.max(0, Math.min(1, Number(pressure) || 0));
+    const pr = this.plugin.settings.pressure || DEFAULT_PRESSURE;
+    const pScale = (pr.enabled && p > 0)
+      ? Number((pr.minScale + p * (pr.maxScale - pr.minScale)).toFixed(2))
+      : 1;
+
+    if (this.pressureFillEl) {
+      this.pressureFillEl.style.width = `${Math.round(p * 100)}%`;
+    }
+    if (this.pressureTextEl) {
+      this.pressureTextEl.textContent = p > 0
+        ? `Pressure: ${(p * 100).toFixed(0)}% → Scale: ${pScale}×`
+        : 'Hovering / No pressure (1.00×)';
+    }
+    for (const el of Object.values(this.previewEls)) {
+      if (el) el.style.setProperty('--vpc-pressure-scale', String(pScale));
     }
   }
 
@@ -602,6 +657,8 @@ class VirtualPenCursorSettingTab extends PluginSettingTab {
     containerEl.empty();
     this.previewEls = {};
     this.previewStages = {};
+    this.pressureFillEl = null;
+    this.pressureTextEl = null;
 
     // ---- presets
     new Setting(containerEl)
@@ -674,6 +731,67 @@ class VirtualPenCursorSettingTab extends PluginSettingTab {
           s.fadeDelay = v;
           await this.plugin.saveSettings();
         }));
+
+    // ---- stylus pressure sensitivity (Windows Ink)
+    new Setting(containerEl)
+      .setName('Stylus pressure sensitivity (Windows Ink)')
+      .setDesc('Dynamically scale the virtual cursor based on how hard you press the stylus tip against the tablet/screen.')
+      .setHeading()
+      .addExtraButton((btn) => btn
+        .setIcon('rotate-ccw')
+        .setTooltip('Reset pressure settings to default')
+        .onClick(async () => {
+          s.pressure = Object.assign({}, DEFAULT_PRESSURE);
+          await redraw();
+        }));
+
+    new Setting(containerEl)
+      .setName('Enable pressure-sensitive size')
+      .setDesc('When enabled, pressing harder with a Windows Ink stylus smoothly scales the cursor between the light-touch and max-pressure multipliers below.')
+      .addToggle((t) => t
+        .setValue(!!s.pressure.enabled)
+        .onChange(async (v) => {
+          s.pressure.enabled = v;
+          await redraw();
+        }));
+
+    new Setting(containerEl)
+      .setName('Light touch scale (min pressure)')
+      .setDesc('Size multiplier at the lightest stylus contact (default 0.75×).')
+      .setDisabled(!s.pressure.enabled)
+      .addSlider((sl) => sl
+        .setLimits(0.25, 2.0, 0.05)
+        .setValue(s.pressure.minScale)
+        .setDynamicTooltip()
+        .setDisabled(!s.pressure.enabled)
+        .onChange(async (v) => {
+          s.pressure.minScale = v;
+          await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName('Full pressure scale (max pressure)')
+      .setDesc('Size multiplier at 100% stylus pressure (default 1.85×). Set lower than light touch if you prefer the cursor to shrink under pressure.')
+      .setDisabled(!s.pressure.enabled)
+      .addSlider((sl) => sl
+        .setLimits(0.25, 3.5, 0.05)
+        .setValue(s.pressure.maxScale)
+        .setDynamicTooltip()
+        .setDisabled(!s.pressure.enabled)
+        .onChange(async (v) => {
+          s.pressure.maxScale = v;
+          await this.plugin.saveSettings();
+        }));
+
+    // Live stylus pressure test pad & meter
+    const meterBox = containerEl.createDiv({ cls: 'vpc-pressure-tester' });
+    const meterHeader = meterBox.createDiv({ cls: 'vpc-pressure-header' });
+    meterHeader.createSpan({ cls: 'vpc-pressure-label', text: 'Live stylus pressure tester (press here with your pen):' });
+    this.pressureTextEl = meterHeader.createSpan({ cls: 'vpc-pressure-readout', text: 'Hovering / No pressure (1.00×)' });
+    const barTrack = meterBox.createDiv({ cls: 'vpc-pressure-track' });
+    this.pressureFillEl = barTrack.createDiv({ cls: 'vpc-pressure-fill' });
+    meterBox.addEventListener('pointerup', () => this.onLivePenPressure(0));
+    meterBox.addEventListener('pointerleave', () => this.onLivePenPressure(0));
 
     // ---- click animation configuration
     new Setting(containerEl)
