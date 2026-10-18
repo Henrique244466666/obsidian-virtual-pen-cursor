@@ -1,0 +1,28 @@
+{
+  "name": "obsidian-virtual-pen-cursor",
+  "version": "1.5.0",
+  "description": "Always-visible virtual cursors (arrow, brush, reticle, nib, laser, wand) with click animations for stylus, Windows Ink, and Excalidraw in Obsidian.",
+  "main": "main.js",
+  "scripts": {
+    "test": "node --check main.js"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "stylus",
+    "windows-ink",
+    "wacom",
+    "cursor",
+    "excalidraw"
+  ],
+  "author": "Henrique244466666",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Henrique244466666/obsidian-virtual-pen-cursor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Henrique244466666/obsidian-virtual-pen-cursor/issues"
+  },
+  "homepage": "https://github.com/Henrique244466666/obsidian-virtual-pen-cursor#readme"
+}

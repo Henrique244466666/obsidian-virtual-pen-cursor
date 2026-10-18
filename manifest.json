@@ -1,0 +1,10 @@
+{
+  "id": "virtual-pen-cursor",
+  "name": "Virtual Pen Cursor",
+  "version": "1.5.0",
+  "minAppVersion": "1.0.0",
+  "description": "Always-visible virtual cursors (arrow, brush, reticle, nib, laser, wand) with click animations for stylus, Windows Ink, and Excalidraw.",
+  "author": "Henrique244466666",
+  "authorUrl": "https://github.com/Henrique244466666",
+  "isDesktopOnly": true
+}

@@ -1,0 +1,445 @@
+/* ===================== Virtual Pen Cursor ===================== */
+
+/* ---- Virtual cursor element (Dot default; override freely in a CSS snippet) ---- */
+.virtual-pen-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: calc(12px * var(--vpc-scale, 1));
+  height: calc(12px * var(--vpc-scale, 1));
+  border-radius: 50%;
+  border: 2px solid var(--vpc-dot-border, var(--interactive-accent, #7c3aed));
+  background-color: var(--vpc-dot-fill, rgba(255, 255, 255, 0.4));
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none; /* must never block clicks underneath */
+  z-index: 9999999;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  will-change: transform, left, top, opacity;
+  transition: opacity 0.15s ease, transform 0.08s ease;
+}
+
+.virtual-pen-cursor.is-visible {
+  opacity: 1;
+}
+
+.virtual-pen-cursor.is-pressed {
+  transform: translate(-50%, -50%) scale(0.8);
+}
+
+.virtual-pen-cursor .vpc-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ---- 1. Virtual Windows arrow ----
+   Hotspot = arrow tip = top-left corner of the element, so no centering translate. */
+.virtual-pen-cursor.vpc-shape-arrow {
+  width: calc(13px * var(--vpc-scale, 1));
+  height: calc(20px * var(--vpc-scale, 1));
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.35));
+  transform: none;
+  transform-origin: 0 0;
+}
+
+.virtual-pen-cursor.vpc-shape-arrow.is-pressed {
+  transform: scale(0.88);
+}
+
+/* ---- 2. Virtual Paintbrush ----
+   Hotspot = bristle tip at bottom-left (approx 4%, 96%) */
+.virtual-pen-cursor.vpc-shape-brush {
+  width: calc(22px * var(--vpc-scale, 1));
+  height: calc(22px * var(--vpc-scale, 1));
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(1px 1px 1.5px rgba(0, 0, 0, 0.4));
+  transform: translate(-4%, -96%);
+  transform-origin: 4% 96%;
+}
+
+.virtual-pen-cursor.vpc-shape-brush.is-pressed {
+  transform: translate(-4%, -96%) rotate(-10deg) scale(0.9);
+}
+
+/* ---- 3. Virtual Precision Reticle (CAD / Technical Crosshair) ----
+   Hotspot = exact center (50%, 50%) */
+.virtual-pen-cursor.vpc-shape-crosshair {
+  width: calc(24px * var(--vpc-scale, 1));
+  height: calc(24px * var(--vpc-scale, 1));
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.65));
+  transform: translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+.virtual-pen-cursor.vpc-shape-crosshair.is-pressed {
+  transform: translate(-50%, -50%) rotate(45deg) scale(0.85);
+}
+
+/* ---- 4. Virtual Fountain Pen Nib (Calligraphy / Ink) ----
+   Hotspot = nib tip at bottom-left (approx 8%, 92%) */
+.virtual-pen-cursor.vpc-shape-nib {
+  width: calc(22px * var(--vpc-scale, 1));
+  height: calc(22px * var(--vpc-scale, 1));
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(1px 1px 1.5px rgba(0, 0, 0, 0.45));
+  transform: translate(-8%, -92%);
+  transform-origin: 8% 92%;
+}
+
+.virtual-pen-cursor.vpc-shape-nib.is-pressed {
+  transform: translate(-8%, -92%) rotate(-6deg) scale(0.9);
+}
+
+/* ---- 5. Virtual Sleek Pointer (macOS / Modern Rounded Arrow) ----
+   Hotspot = top-left tip (approx 7%, 6%) */
+.virtual-pen-cursor.vpc-shape-mac {
+  width: calc(16px * var(--vpc-scale, 1));
+  height: calc(22px * var(--vpc-scale, 1));
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  transform: translate(-7%, -6%);
+  transform-origin: 7% 6%;
+}
+
+.virtual-pen-cursor.vpc-shape-mac.is-pressed {
+  transform: translate(-7%, -6%) scale(0.88);
+}
+
+/* ---- 6. Virtual Laser Pointer (Neon Presentation Dot) ----
+   Hotspot = center (50%, 50%) */
+.virtual-pen-cursor.vpc-shape-laser {
+  width: calc(10px * var(--vpc-scale, 1));
+  height: calc(10px * var(--vpc-scale, 1));
+  border-radius: 50%;
+  border: 2px solid var(--vpc-laser-glow, #ef4444);
+  background-color: var(--vpc-laser-core, #ffffff);
+  box-shadow:
+    0 0 calc(6px * var(--vpc-scale, 1)) var(--vpc-laser-glow, #ef4444),
+    0 0 calc(12px * var(--vpc-scale, 1)) var(--vpc-laser-glow, #ef4444),
+    0 0 calc(20px * var(--vpc-scale, 1)) var(--vpc-laser-glow, #ef4444);
+  transform: translate(-50%, -50%);
+}
+
+.virtual-pen-cursor.vpc-shape-laser.is-pressed {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+
+/* ---- 7. Virtual Sparkle Wand (Creative / Magic Star) ----
+   Hotspot = star center at top-left (approx 19%, 19%) */
+.virtual-pen-cursor.vpc-shape-wand {
+  width: calc(23px * var(--vpc-scale, 1));
+  height: calc(23px * var(--vpc-scale, 1));
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+  transform: translate(-19%, -19%);
+  transform-origin: 19% 19%;
+}
+
+.virtual-pen-cursor.vpc-shape-wand.is-pressed {
+  transform: translate(-19%, -19%) rotate(-14deg) scale(0.9);
+}
+
+/* ===================== Click Animations ===================== */
+
+.vpc-click-fx {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: var(--vpc-fx-size, 36px);
+  height: var(--vpc-fx-size, 36px);
+  pointer-events: none;
+  z-index: 9999998;
+  transform: translate(-50%, -50%);
+}
+
+.vpc-click-fx.is-preview {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+}
+
+/* Effect 1: Expanding Ripple Ring */
+.vpc-click-fx.vpc-fx-ripple {
+  border-radius: 50%;
+  border: 2.5px solid var(--vpc-fx-color, #7c3aed);
+  animation: vpc-anim-ripple var(--vpc-fx-duration, 400ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes vpc-anim-ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* Effect 2: Particle Starburst */
+.vpc-click-fx.vpc-fx-burst .vpc-fx-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  animation: vpc-anim-burst var(--vpc-fx-duration, 400ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes vpc-anim-burst {
+  0% {
+    transform: scale(0.25) rotate(-12deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2) rotate(12deg);
+    opacity: 0;
+  }
+}
+
+/* Effect 3: Soft Color Pulse */
+.vpc-click-fx.vpc-fx-pulse {
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--vpc-fx-color, #7c3aed) 10%, transparent 72%);
+  animation: vpc-anim-pulse var(--vpc-fx-duration, 400ms) ease-out forwards;
+}
+
+@keyframes vpc-anim-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* Effect 4: Double Shockwave */
+.vpc-click-fx.vpc-fx-ring::before,
+.vpc-click-fx.vpc-fx-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--vpc-fx-color, #7c3aed);
+}
+
+.vpc-click-fx.vpc-fx-ring::before {
+  animation: vpc-anim-ring-outer var(--vpc-fx-duration, 400ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.vpc-click-fx.vpc-fx-ring::after {
+  animation: vpc-anim-ring-inner var(--vpc-fx-duration, 400ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes vpc-anim-ring-outer {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+@keyframes vpc-anim-ring-inner {
+  0%, 18% {
+    transform: scale(0.15);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* ===================== Settings Tab Layout ===================== */
+
+/* ---- Quick Presets Grid ---- */
+.vpc-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+button.vpc-preset-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  height: auto;
+  padding: 10px 12px;
+  gap: 4px;
+  white-space: normal;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+button.vpc-preset-card:hover {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+button.vpc-preset-card.is-active {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.vpc-preset-card-title {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.3;
+}
+
+.vpc-preset-card-desc {
+  font-size: var(--font-ui-smaller);
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ---- Live Preview Cards ---- */
+.vpc-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.vpc-preview-card {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.vpc-preview-card:hover {
+  border-color: var(--interactive-accent);
+  background-color: var(--background-modifier-hover);
+}
+
+.vpc-preview-title {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.vpc-preview-stage {
+  position: relative;
+  width: 100%;
+  height: 76px;
+  background-color: var(--background-primary);
+  background-image: radial-gradient(var(--background-modifier-border) 1px, transparent 1px);
+  background-size: 12px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Subtle crosshair at the center of the preview stage showing the exact click coordinate */
+.vpc-preview-target {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.vpc-preview-target::before,
+.vpc-preview-target::after {
+  content: "";
+  position: absolute;
+  background-color: var(--text-faint);
+  opacity: 0.45;
+}
+
+.vpc-preview-target::before {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.vpc-preview-target::after {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.virtual-pen-cursor.is-preview {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+}
+
+.vpc-preview-caption {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+/* ---- Native cursor override (replaces the excalidraw_custom_crosshair snippet) ----
+   The plugin sets --vpc-cursor-excalidraw / --vpc-cursor-elsewhere on <body> and the matching
+   vpc-ov-* class, based on the rule for the input device currently in use.
+   Excalidraw areas: every element of the view, incl. canvas & UI islands, across hover and
+   active pen contact (beats Excalidraw's inline cursor). */
+body.vpc-ov-excalidraw .excalidraw,
+body.vpc-ov-excalidraw .excalidraw * {
+  cursor: var(--vpc-cursor-excalidraw) !important;
+}
+
+/* Everything that is not inside an Excalidraw view. */
+body.vpc-ov-elsewhere :not(.excalidraw):not(.excalidraw *) {
+  cursor: var(--vpc-cursor-elsewhere) !important;
+}
+
+/* Exception: Obsidian's settings window always keeps default / auto cursor.
+   We explicitly override with higher specificity so no virtual/hidden cursor applies here. */
+body.vpc-ov-elsewhere .modal-container:has(.mod-settings),
+body.vpc-ov-elsewhere .modal-container:has(.mod-settings) *,
+body.vpc-ov-elsewhere .mod-settings,
+body.vpc-ov-elsewhere .mod-settings * {
+  cursor: auto !important;
+}
