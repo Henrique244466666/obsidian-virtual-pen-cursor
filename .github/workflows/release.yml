@@ -1,0 +1,45 @@
+name: Release Plugin
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Attest Build Provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: |
+            ## Virtual Pen Cursor ${{ github.ref_name }}
+            
+            Always-visible virtual cursors (arrow, brush, reticle, nib, laser, wand) with click animations for stylus, Windows Ink, and Excalidraw.
+            
+            ### Features
+            - **8 Virtual Cursors**: Dot, Arrow, Brush, Precision Reticle, Fountain Pen Nib, Sleek Pointer, Laser Pointer, Sparkle Wand.
+            - **Customizable Click Animations**: Ripple ring, particle starburst, color pulse, double shockwave, and press shrink feedback.
+            - **Excalidraw Integration**: Granular cursor rules for canvas drawings vs. the rest of Obsidian.
+            - **Color & Size Customization**: Full palette pickers and size multipliers (0.5x - 3x).
+            - **Interactive Settings Gallery**: Live preview cards to test cursors and animations.
+          files: |
+            main.js
+            manifest.json
+            styles.css
